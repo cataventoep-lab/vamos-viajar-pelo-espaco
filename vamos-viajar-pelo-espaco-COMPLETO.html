@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vamos viajar pelo espaço? 🚀</title>
+<style>
+  :root{
+    --ciano:#4de3f0;
+    --amarelo:#ffd93d;
+    --laranja:#ff8c42;
+    --rosa:#ff6b9d;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{
+    margin:0; padding:0; min-height:100%;
+    font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+    background: radial-gradient(ellipse at top, #1a1454 0%, #0a0e2e 55%, #050615 100%);
+    background-attachment: fixed;
+    color:#fff;
+    overflow-x:hidden;
+    user-select:none;
+  }
+  #stars{ position:fixed; inset:0; z-index:0; pointer-events:none; }
+  .star{
+    position:absolute; background:#fff; border-radius:50%;
+    animation: twinkle 3s infinite ease-in-out;
+  }
+  @keyframes twinkle{ 0%,100%{opacity:.25;} 50%{opacity:1;} }
+
+  .planet{
+    position:fixed; z-index:0; pointer-events:none;
+    animation: float-planet 9s ease-in-out infinite;
+  }
+  @keyframes float-planet{
+    0%,100%{ transform: translate3d(0,0,0) rotate(0deg); }
+    50%{ transform: translate3d(0,-18px,0) rotate(180deg); }
+  }
+
+  .container{ position:relative; z-index:2; max-width:1100px; margin:0 auto; padding:14px 14px 50px; }
+  @media (max-width: 899px){
+    .container{ padding-top: 62px; }
+  }
+
+  h1.title{
+    text-align:center; font-size: clamp(1.5rem, 4.5vw, 2.5rem);
+    margin: 10px 0 4px;
+    background: linear-gradient(90deg, var(--ciano), var(--amarelo), var(--rosa));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .subtitle{ text-align:center; color:#b9c2ff; margin-bottom:14px; font-size:.92rem;}
+
+  #tela-inicial{
+    text-align:center; padding: 28px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 24px; margin-top: 16px;
+  }
+  #tela-inicial .foguete-hero{ font-size: 4.5rem; animation: subir 2.4s ease-in-out infinite; display:inline-block;}
+  @keyframes subir{ 0%,100%{transform:translate3d(0,0,0) rotate(-45deg);} 50%{transform:translate3d(0,-16px,0) rotate(-45deg);} }
+
+  .btn{
+    font-family:inherit; font-weight:bold; cursor:pointer; border:none; border-radius:50px;
+    padding:14px 32px; font-size:1.05rem; color:#0a0e2e; margin:5px;
+    background: linear-gradient(90deg, var(--amarelo), var(--laranja));
+    box-shadow: 0 5px 0 #b35a1a;
+  }
+  .btn:active{ transform: translateY(4px); box-shadow: 0 1px 0 #b35a1a; }
+  .btn.secundario{ background: linear-gradient(90deg, var(--ciano), #6de3ff); box-shadow:0 5px 0 #1c8a99;}
+  .btn:disabled{ opacity:.45; }
+
+  .instrucoes{ text-align:left; max-width:600px; margin:18px auto; color:#dfe4ff; line-height:1.6; font-size:.93rem;}
+  .instrucoes b{ color: var(--amarelo); }
+
+  #hud{
+    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+    background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,.12);
+    border-radius:18px; padding:10px 14px; margin-bottom:12px;
+  }
+  .jogador-card{
+    display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:14px;
+    background: rgba(255,255,255,0.06); border:2px solid transparent; transition: border-color .2s;
+  }
+  .jogador-card.ativo{ border-color: var(--amarelo); }
+  .jogador-card .foguete-icon{ font-size:1.5rem; }
+  .jogador-card .nome{ font-weight:bold; font-size:.88rem; }
+  .jogador-card .casa-atual{ font-size:.72rem; color:#b9c2ff; }
+  #vez-texto{ font-size:1.05rem; font-weight:bold; color:var(--amarelo); text-align:center; flex:1 1 100%; order:3; }
+
+  /* ---------- DADO 3D (simples e leve) ---------- */
+  #zona-dado{ display:flex; flex-direction:column; align-items:center; gap:12px; margin: 16px 0; }
+  #cena-dado{ width:96px; height:96px; perspective: 600px; }
+  #dado{
+    width:96px; height:96px; position:relative;
+    transform-style: preserve-3d;
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+  #dado.rolando{ transition: transform 1.2s cubic-bezier(.25,.8,.35,1); }
+  .face{
+    position:absolute; width:96px; height:96px;
+    background: linear-gradient(145deg,#ffffff,#dbe2ff);
+    border:3px solid #3c4488; border-radius:14px;
+    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr);
+    padding:8px;
+  }
+  .pip{ width:17px; height:17px; background:#1b2a6b; border-radius:50%; margin:auto; }
+  .f1{ transform: translateZ(48px); }
+  .f2{ transform: rotateY(90deg) translateZ(48px); }
+  .f3{ transform: rotateX(-90deg) translateZ(48px); }
+  .f4{ transform: rotateX(90deg) translateZ(48px); }
+  .f5{ transform: rotateY(-90deg) translateZ(48px); }
+  .f6{ transform: rotateY(180deg) translateZ(48px); }
+  #resultado-dado{ font-size:1.05rem; font-weight:bold; color:var(--ciano); min-height:24px; }
+
+  /* ---------- TABULEIRO ---------- */
+  #tabuleiro-wrap{
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px; padding: 14px; margin-top: 10px;
+  }
+  #tabuleiro{ display:grid; grid-template-columns: repeat(8, 1fr); gap:8px; }
+  .casa{
+    position:relative; aspect-ratio: 1/1; border-radius:14px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-weight:bold; color:#fff; padding:4px; min-height:62px;
+    background: linear-gradient(160deg, #274690, #1b2a6b);
+    border: 2px solid rgba(255,255,255,.15);
+    transition: box-shadow .25s, transform .25s;
+  }
+  .casa.sorte{ background: linear-gradient(160deg, #7b2fbf, #4b1d80); }
+  .casa.inicio{ background: linear-gradient(160deg, #1c7a3e, #0e4d24); }
+  .casa.fim{ background: linear-gradient(160deg, #6a6a8a, #3a3a5a); }
+  .casa .letra-txt{ font-size:1.25rem; line-height:1.1; }
+  .casa .emoji-txt{ font-size:1.15rem; line-height:1.1; }
+  .casa .num{ position:absolute; top:3px; left:5px; font-size:.58rem; color:rgba(255,255,255,.45); font-weight:normal; }
+  .casa.destaque{
+    box-shadow: 0 0 0 4px var(--amarelo), 0 0 22px rgba(255,217,61,.6);
+    transform: scale(1.08); z-index:5;
+  }
+  .pawns-container{ position:absolute; bottom:1px; display:flex; gap:2px; }
+  .pawn{ font-size:1.35rem; animation: pousar .5s ease; }
+  @keyframes pousar{ 0%{ transform: translateY(-30px) scale(.5); opacity:0;} 100%{ transform: none; opacity:1; } }
+
+  /* ---------- CARTA ---------- */
+  #overlay{
+    position:fixed; inset:0; background: rgba(4,6,20,.88); z-index:50;
+    display:none; align-items:center; justify-content:center; padding:16px;
+    perspective: 1000px;
+  }
+  #overlay.show{ display:flex; }
+  #carta{
+    width:100%; max-width:420px; background: linear-gradient(160deg,#1b2a6b,#0a0e2e);
+    border:3px solid var(--ciano); border-radius:26px; padding:24px 20px 20px;
+    text-align:center; animation: carta-entrar .5s cubic-bezier(.2,.9,.3,1.2);
+  }
+  @keyframes carta-entrar{
+    0%{ transform: rotateY(80deg) scale(.6); opacity:0;}
+    100%{ transform: none; opacity:1;}
+  }
+  #carta.sorte{ border-color: var(--rosa); }
+  #carta .tag{ font-size:.82rem; letter-spacing:2px; color:var(--amarelo); font-weight:bold; }
+  #carta .letra-grande{ font-size:4.2rem; font-weight:900; margin:4px 0 0; }
+  #carta .emoji-grande{ font-size:4.6rem; margin:8px 0; display:inline-block; animation: balancar 1.6s ease-in-out infinite; }
+  @keyframes balancar{ 0%,100%{ transform: rotate(-7deg);} 50%{ transform: rotate(7deg);} }
+  #carta .onomatopeia{ font-size:1.7rem; font-weight:900; color: var(--amarelo); letter-spacing:1px; margin:4px 0 12px;}
+  #carta .instrucao-carta{ font-size:.98rem; color:#dfe4ff; margin-bottom:16px; line-height:1.5;}
+  #carta .sorte-texto{ font-size:1.25rem; margin: 12px 0 18px; line-height:1.5; font-weight:bold;}
+
+  #tela-vitoria{
+    display:none; text-align:center; padding:36px 20px;
+    background: rgba(255,255,255,0.05); border-radius:24px; margin-top:20px;
+    border:1px solid rgba(255,255,255,.15);
+  }
+  #tela-vitoria.show{ display:block; }
+  #tela-vitoria .lua-emoji{ font-size:4.5rem; animation: girar-lua 7s linear infinite; display:inline-block;}
+  @keyframes girar-lua{ from{transform:rotate(0);} to{transform:rotate(360deg);} }
+  #confete{ position:fixed; inset:0; pointer-events:none; z-index:60; }
+
+  /* ---------- BOTÃO TELA CHEIA ---------- */
+  #btn-tela-cheia{
+    position: fixed; top: 10px; right: 10px; z-index: 100;
+    width: 46px; height: 46px; border-radius: 14px;
+    border: 2px solid rgba(255,255,255,.3);
+    background: rgba(27,42,107,.85);
+    color: #fff; font-size: 1.3rem; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0;
+  }
+  #btn-tela-cheia:active{ transform: scale(.92); }
+  #btn-tela-cheia .rotulo{ display: none; }
+  @media (min-width: 900px){
+    #btn-tela-cheia{ width: auto; height: auto; padding: 9px 16px; font-size: 1rem; gap: 7px; }
+    #btn-tela-cheia .rotulo{ display: inline; font-family: inherit; font-weight: bold; font-size: .85rem; }
+  }
+  /* Ajustes quando estiver em tela cheia */
+  body:fullscreen .container,
+  body:-webkit-full-screen .container{ padding-top: 8px; }
+
+  /* ---------- FLASHCARDS ---------- */
+  #overlay-flash{
+    position:fixed; inset:0; background: rgba(4,6,20,.94); z-index:70;
+    display:none; padding:14px; overflow-y:auto;
+  }
+  #overlay-flash.show{ display:block; }
+  #flash-topo{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    max-width:1000px; margin:0 auto 12px; flex-wrap:wrap;
+  }
+  #flash-topo h2{ margin:0; font-size:1.2rem; color:var(--amarelo); }
+  #flash-topo p{ margin:2px 0 0; font-size:.8rem; color:#b9c2ff; flex:1 1 100%; }
+  #grade-flash{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap:10px; max-width:1000px; margin:0 auto 20px;
+  }
+  .flashcard{
+    background: linear-gradient(160deg, #274690, #141d4d);
+    border:2px solid rgba(255,255,255,.18); border-radius:16px;
+    padding:12px 8px; text-align:center; cursor:pointer;
+    transition: transform .18s, box-shadow .18s;
+  }
+  .flashcard:active{ transform: scale(.95); }
+  .flashcard.tocando{ box-shadow: 0 0 0 3px var(--amarelo); transform: scale(1.05); }
+  .flashcard .fc-letra{ font-size:2.4rem; font-weight:900; line-height:1; color:#fff; }
+  .flashcard .fc-emoji{ font-size:2rem; line-height:1.2; margin:4px 0; }
+  .flashcard .fc-ono{ font-size:.85rem; font-weight:900; color:var(--amarelo); letter-spacing:.5px; word-break:break-word; }
+  .flashcard .fc-dica{ font-size:.68rem; color:#c9d0ff; margin-top:5px; line-height:1.3; }
+  #btn-flashcards{ background: linear-gradient(90deg, var(--rosa), #c94b7d); box-shadow:0 5px 0 #8e2f52; color:#fff; }
+  @media (max-width:520px){
+    #grade-flash{ grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap:8px; }
+    .flashcard .fc-letra{ font-size:2rem; }
+    .flashcard .fc-emoji{ font-size:1.6rem; }
+    .flashcard .fc-ono{ font-size:.75rem; }
+  }
+
+  .oculto{ display:none !important; }
+
+  @media (max-width:640px){
+    #tabuleiro{ grid-template-columns: repeat(5, 1fr); gap:6px; }
+    .casa .letra-txt{ font-size:1.05rem; }
+    .casa .emoji-txt{ font-size:.95rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="stars"></div>
+<div id="confete"></div>
+
+<button id="btn-tela-cheia" title="Tela cheia" aria-label="Tela cheia">
+  <span id="icone-tela-cheia">⛶</span><span class="rotulo" id="rotulo-tela-cheia">Tela cheia</span>
+</button>
+
+<div class="container">
+  <h1 class="title">🚀 Vamos viajar pelo espaço? 🌙</h1>
+  <p class="subtitle">Um jogo de trilha para aprender o alfabeto e os sons das letras!</p>
+
+  <div id="tela-inicial">
+    <div class="foguete-hero">🚀</div>
+    <h2>Prontos para decolar?</h2>
+    <div class="instrucoes">
+      <p>🌍 <b>Objetivo:</b> sair da Terra e chegar até a Lua, viajando casa por casa pelo espaço.</p>
+      <p>🎲 <b>Como jogar:</b> cada jogador joga o dado na sua vez e anda o número de casas sorteado.</p>
+      <p>🔤 <b>Em cada casa</b> aparece uma carta com uma letra e sua onomatopeia. Uma voz fala o nome da letra e toca o efeito sonoro dela (ex: letra B → voz diz "B" e toca som de bomba 💣). A criança repete o nome e o som para continuar!</p>
+      <p>✨ <b>Casas roxas</b> são cartas de sorte — podem te ajudar a avançar ou te atrasar um pouquinho.</p>
+      <p>👩‍🚀 <b>Dois foguetes</b> disputam a corrida: um é da professora e outro é da criança. Joguem em turnos alternados!</p>
+    </div>
+    <button class="btn" id="btn-iniciar">🚀 Começar a viagem!</button>
+    <button class="btn" id="btn-flashcards">🔤 Flashcards das onomatopeias</button>
+  </div>
+
+  <div id="jogo" class="oculto">
+    <div id="hud">
+      <div class="jogador-card" id="card-p1">
+        <span class="foguete-icon">🚀</span>
+        <div>
+          <div class="nome">Professora</div>
+          <div class="casa-atual" id="pos-p1">Casa: Terra 🌍</div>
+        </div>
+      </div>
+      <div class="jogador-card" id="card-p2">
+        <span class="foguete-icon">🛸</span>
+        <div>
+          <div class="nome">Criança</div>
+          <div class="casa-atual" id="pos-p2">Casa: Terra 🌍</div>
+        </div>
+      </div>
+      <div id="vez-texto">Vez da Professora 🚀</div>
+    </div>
+
+    <div id="zona-dado">
+      <div id="cena-dado">
+        <div id="dado">
+          <div class="face f1"><span class="pip" style="grid-area:2/2;"></span></div>
+          <div class="face f2">
+            <span class="pip" style="grid-area:1/1;"></span><span class="pip" style="grid-area:3/3;"></span>
+          </div>
+          <div class="face f3">
+            <span class="pip" style="grid-area:1/1;"></span><span class="pip" style="grid-area:2/2;"></span><span class="pip" style="grid-area:3/3;"></span>
+          </div>
+          <div class="face f4">
+            <span class="pip" style="grid-area:1/1;"></span><span class="pip" style="grid-area:1/3;"></span>
+            <span class="pip" style="grid-area:3/1;"></span><span class="pip" style="grid-area:3/3;"></span>
+          </div>
+          <div class="face f5">
+            <span class="pip" style="grid-area:1/1;"></span><span class="pip" style="grid-area:1/3;"></span>
+            <span class="pip" style="grid-area:2/2;"></span>
+            <span class="pip" style="grid-area:3/1;"></span><span class="pip" style="grid-area:3/3;"></span>
+          </div>
+          <div class="face f6">
+            <span class="pip" style="grid-area:1/1;"></span><span class="pip" style="grid-area:1/3;"></span>
+            <span class="pip" style="grid-area:2/1;"></span><span class="pip" style="grid-area:2/3;"></span>
+            <span class="pip" style="grid-area:3/1;"></span><span class="pip" style="grid-area:3/3;"></span>
+          </div>
+        </div>
+      </div>
+      <div id="resultado-dado"></div>
+      <button class="btn" id="btn-dado">🎲 Jogar o dado</button>
+    </div>
+
+    <div id="tabuleiro-wrap">
+      <div id="tabuleiro"></div>
+    </div>
+    <div style="text-align:center; margin-top:12px;">
+      <button class="btn" id="btn-flashcards-jogo">🔤 Flashcards das onomatopeias</button>
+    </div>
+  </div>
+
+  <div id="tela-vitoria">
+    <div class="lua-emoji">🌙</div>
+    <h2 id="texto-vitoria">Chegamos à Lua!</h2>
+    <p>Parabéns, astronauta! Você aprendeu o alfabeto inteiro viajando pelo espaço! 🌟</p>
+    <button class="btn secundario" id="btn-reiniciar">🔁 Jogar de novo</button>
+  </div>
+</div>
+
+<div id="overlay-flash">
+  <div id="flash-topo">
+    <h2>🔤 Flashcards das onomatopeias</h2>
+    <button class="btn secundario" id="btn-fechar-flash">✕ Fechar</button>
+    <p>Toque em qualquer carta para ouvir a voz dizendo o nome da letra e o som que ela faz.</p>
+  </div>
+  <div id="grade-flash"></div>
+</div>
+
+<div id="overlay">
+  <div id="carta">
+    <div class="tag" id="carta-tag">CASA 5</div>
+    <div class="letra-grande" id="carta-letra">B</div>
+    <div class="emoji-grande" id="carta-emoji">💣</div>
+    <div class="onomatopeia" id="carta-onomatopeia">BBBBBOOM</div>
+    <div class="instrucao-carta" id="carta-instrucao">Diga o nome da letra e o som que ela faz!</div>
+    <div class="sorte-texto oculto" id="carta-sorte-texto"></div>
+    <button class="btn secundario" id="btn-ouvir">🔊 Ouvir de novo</button>
+    <br>
+    <button class="btn" id="btn-confirmar-carta">✅ Consegui! Continuar viagem</button>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+var ehMobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+/* ===================== ÁUDIO ===================== */
+var audioCtx = null;
+function getCtx(){
+  try{
+    if(!audioCtx){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return null;
+      audioCtx = new AC();
+    }
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }catch(e){ return null; }
+}
+function beep(freq, duration, type, vol, delay){
+  var ctx = getCtx(); if(!ctx) return;
+  try{
+    var osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = type || 'sine'; osc.frequency.value = freq;
+    osc.connect(gain); gain.connect(ctx.destination);
+    var t0 = ctx.currentTime + (delay || 0);
+    gain.gain.setValueAtTime(vol || 0.2, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
+    osc.start(t0); osc.stop(t0 + duration + 0.02);
+  }catch(e){}
+}
+function slide(f1, f2, dur, type, vol, delay){
+  var ctx = getCtx(); if(!ctx) return;
+  try{
+    var osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = type || 'sine';
+    var t0 = ctx.currentTime + (delay || 0);
+    osc.frequency.setValueAtTime(f1, t0);
+    osc.frequency.exponentialRampToValueAtTime(f2, t0 + dur);
+    gain.gain.setValueAtTime(vol || 0.2, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur + 0.05);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t0); osc.stop(t0 + dur + 0.07);
+  }catch(e){}
+}
+function ruido(duration, vol, delay, fade){
+  var ctx = getCtx(); if(!ctx) return;
+  try{
+    var n = Math.floor(ctx.sampleRate * duration);
+    var buffer = ctx.createBuffer(1, n, ctx.sampleRate);
+    var data = buffer.getChannelData(0);
+    for(var i=0;i<n;i++) data[i] = (Math.random()*2-1) * (fade === false ? 1 : (1 - i/n));
+    var src = ctx.createBufferSource(); src.buffer = buffer;
+    var gain = ctx.createGain(); gain.gain.value = vol;
+    src.connect(gain); gain.connect(ctx.destination);
+    src.start(ctx.currentTime + (delay || 0));
+  }catch(e){}
+}
+function somDado(){ for(var i=0;i<4;i++) beep(300 + Math.random()*400, 0.06, 'square', 0.12, i*0.1); }
+function somFoguete(){ slide(80, 420, 0.5, 'sawtooth', 0.15, 0); ruido(0.5, 0.07, 0); }
+function somCartaAbre(){ beep(660,0.12,'triangle',0.15,0); beep(880,0.14,'triangle',0.15,0.1); beep(1100,0.18,'triangle',0.15,0.2); }
+function somSorte(){ [523,659,784,1046].forEach(function(f,i){ beep(f,0.15,'sine',0.15,i*0.1); }); }
+function somVitoria(){ [523,659,784,1046,1318].forEach(function(f,i){ beep(f,0.3,'triangle',0.18,i*0.15); }); }
+
+/* Efeitos sonoros únicos por letra */
+var efeitosLetras = {
+  A: function(){ // espirro + dúvida "ããã?"
+    ruido(0.25, 0.3, 0); beep(180, 0.15, 'sawtooth', 0.2, 0.15);
+    slide(260, 420, 0.4, 'sine', 0.18, 0.6);
+  },
+  B: function(){ beep(60,0.6,'sawtooth',0.32,0); beep(45,0.7,'sine',0.28,0.02); ruido(0.6,0.32,0); },
+  C: function(){ // ovo quebrando (crec crec) + cobrinha (ssssss)
+    for(var i=0;i<3;i++) beep(1200+Math.random()*400,0.03,'square',0.18,i*0.12);
+    ruido(0.6, 0.2, 0.55, false);
+  },
+  D: function(){ beep(1400,0.03,'square',0.12,0); beep(784,0.5,'sine',0.2,0.08); beep(523,0.6,'sine',0.2,0.43); },
+  E: function(){ // comemorando + nojinho
+    [440,554,659].forEach(function(f,i){ beep(f,0.16,'triangle',0.2,i*0.14); });
+    slide(500, 180, 0.45, 'sawtooth', 0.2, 0.58);
+  },
+  F: function(){ ruido(0.4, 0.26, 0); },
+  G: function(){ // bebendo água (glu-glu) + microondas esquentando (G+E, G+I)
+    for(var i=0;i<4;i++) beep(220-i*15, 0.12, 'sine', 0.2, i*0.13);
+    for(var j=0;j<4;j++) beep(900, 0.08, 'square', 0.18, 0.62 + j*0.18);
+  },
+  H: function(){ beep(200, 0.1, 'sine', 0.03, 0); },
+  I: function(){ beep(1200, 0.35, 'sawtooth', 0.2, 0); },
+  J: function(){ for(var i=0;i<4;i++) beep(900, 0.08, 'square', 0.18, i*0.18); },
+  K: function(){ for(var i=0;i<3;i++) beep(1200+Math.random()*400,0.03,'square',0.18,i*0.12); },
+  L: function(){ [523,587,659,587].forEach(function(f,i){ beep(f,0.2,'triangle',0.2,i*0.22); }); },
+  M: function(){ beep(180, 0.7, 'sine', 0.22, 0); },
+  N: function(){ slide(300, 250, 0.2, 'sine', 0.18, 0); slide(250, 330, 0.25, 'sine', 0.18, 0.22); },
+  O: function(){ // oi + susto ÓÓÓ
+    slide(350, 700, 0.3, 'sine', 0.2, 0);
+    slide(600, 200, 0.28, 'sawtooth', 0.24, 0.52);
+  },
+  P: function(){ ruido(0.06, 0.32, 0); slide(900, 60, 0.09, 'square', 0.3, 0); },
+  Q: function(){ [500,420].forEach(function(f,i){ beep(f,0.14,'sawtooth',0.22,i*0.2); }); },
+  R: function(){ // cachorro bravo + pirata + gatinho
+    beep(90, 0.5, 'sawtooth', 0.28, 0);
+    slide(140, 110, 0.4, 'sawtooth', 0.22, 0.58);
+    beep(60, 0.5, 'triangle', 0.18, 1.08);
+  },
+  S: function(){ ruido(0.6, 0.2, 0, false); },
+  T: function(){ beep(400,0.06,'square',0.25,0); beep(400,0.06,'square',0.25,0.25); },
+  U: function(){ slide(220, 265, 0.3, 'sine', 0.2, 0); slide(265, 215, 0.3, 'sine', 0.2, 0.3); },
+  V: function(){ // ventilador girando
+    var ctx = getCtx(); if(!ctx){ return; }
+    try{
+      var osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      var t0 = ctx.currentTime;
+      for(var i=0;i<7;i++) osc.frequency.setValueAtTime(150 + (i%2===0?20:-10), t0 + i*0.09);
+      gain.gain.setValueAtTime(0.16, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0+0.65);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t0); osc.stop(t0+0.67);
+    }catch(e){}
+    ruido(0.6, 0.08, 0);
+  },
+  W: function(){ efeitosLetras.U(); },
+  X: function(){ ruido(0.35, 0.2, 0); },
+  Y: function(){ efeitosLetras.I(); },
+  Z: function(){ beep(280,0.6,'sawtooth',0.18,0); beep(300,0.6,'square',0.07,0); }
+};
+
+/* ---------- Voz ---------- */
+var vozes = [];
+function carregarVozes(){
+  try{ vozes = window.speechSynthesis ? window.speechSynthesis.getVoices() : []; }catch(e){ vozes = []; }
+}
+if('speechSynthesis' in window){
+  carregarVozes();
+  window.speechSynthesis.onvoiceschanged = carregarVozes;
+}
+function falarLetra(texto, callback){
+  var chamou = false;
+  function uma(){ if(!chamou){ chamou = true; if(callback) callback(); } }
+  if(!('speechSynthesis' in window)){ uma(); return; }
+  try{
+    window.speechSynthesis.cancel();
+    if(!vozes.length) carregarVozes();
+    var u = new SpeechSynthesisUtterance(texto);
+    u.lang = 'pt-BR';
+    for(var i=0;i<vozes.length;i++){
+      if(vozes[i].lang && vozes[i].lang.toLowerCase().indexOf('pt') === 0){ u.voice = vozes[i]; break; }
+    }
+    u.rate = 0.85; u.pitch = 1.15;
+    u.onend = uma; u.onerror = uma;
+    window.speechSynthesis.speak(u);
+    setTimeout(uma, 1500);
+  }catch(e){ uma(); }
+}
+
+/* ===================== FUNDO ===================== */
+(function fundo(){
+  var el = document.getElementById('stars');
+  var qtd = ehMobile ? 30 : 60;
+  var html = '';
+  for(var i=0;i<qtd;i++){
+    var tam = (Math.random()*2 + 1).toFixed(1);
+    html += '<div class="star" style="width:'+tam+'px;height:'+tam+'px;top:'+
+            (Math.random()*100).toFixed(1)+'%;left:'+(Math.random()*100).toFixed(1)+
+            '%;animation-delay:'+(Math.random()*3).toFixed(1)+'s"></div>';
+  }
+  el.innerHTML = html;
+
+  var planetas = [['🪐',56,'8%','86%',9],['🌟',26,'22%','5%',7],['☄️',36,'66%','90%',8],['🛰️',30,'44%','3%',10]];
+  planetas.forEach(function(p){
+    var d = document.createElement('div');
+    d.className = 'planet';
+    d.textContent = p[0];
+    d.style.fontSize = p[1]+'px';
+    d.style.top = p[2]; d.style.left = p[3];
+    d.style.animationDuration = p[4]+'s';
+    document.body.appendChild(d);
+  });
+})();
+
+/* ===================== DADOS DO JOGO ===================== */
+var alfabeto = [
+  {letra:'A', ono:'AAAA-TCHIM / ÃÃÃ?', emoji:'🤧❓', dica:'A de espirro e A de dúvida!'},
+  {letra:'B', ono:'BBBBBOOM', emoji:'💣', dica:'B de bomba explodindo!'},
+  {letra:'C', ono:'CREC CREC / SSSSSS', emoji:'🥚🐍', dica:'C de ovo quebrando (A, O, U) e C de cobra (E, I)!'},
+  {letra:'D', ono:'DING DONG', emoji:'👆🔔', dica:'D de dedo tocando a campainha!'},
+  {letra:'E', ono:'EEEE! / ÉÉÉCA', emoji:'🙌🤢', dica:'E de comemorar e E de nojinho!'},
+  {letra:'F', ono:'FFFFFF', emoji:'🐈‍⬛', dica:'F de gato bufando!'},
+  {letra:'G', ono:'GLU-GLU / JJJJJJ', emoji:'🥤📻', dica:'G de bebendo água (A, O, U) e G de microondas (E, I)!'},
+  {letra:'H', ono:'(sem som)', emoji:'🤫', dica:'H não tem som, ele é mudo!'},
+  {letra:'I', ono:'IIIIIIII', emoji:'😵', dica:'I de grito!'},
+  {letra:'J', ono:'JJJJJJ', emoji:'📻', dica:'J de microondas!'},
+  {letra:'K', ono:'CREC CREC', emoji:'🥚', dica:'K de ovo quebrando!'},
+  {letra:'L', ono:'LÁ LÁ LÁ', emoji:'🎵', dica:'L de música cantando!'},
+  {letra:'M', ono:'MMMMMM', emoji:'🧁', dica:'M de comendo cupcake!'},
+  {letra:'N', ono:'NÃO SEI', emoji:'🤔', dica:'N de dúvida!'},
+  {letra:'O', ono:'OOOOOI / ÓÓÓ', emoji:'👋😲', dica:'O de oi e O de susto!'},
+  {letra:'P', ono:'PLOC', emoji:'🫧', dica:'P de chiclete estourando!'},
+  {letra:'Q', ono:'QUÁ-QUÁ', emoji:'🦆', dica:'Q de pato!'},
+  {letra:'R', ono:'RRRRRR', emoji:'🐕😾🏴‍☠️', dica:'R de cachorro bravo, pirata e gatinho ronronando!'},
+  {letra:'S', ono:'SSSSSS', emoji:'🐍', dica:'S de cobra!'},
+  {letra:'T', ono:'TOC-TOC', emoji:'🚪', dica:'T de batendo na porta!'},
+  {letra:'U', ono:'UUUUUU', emoji:'👻', dica:'U de fantasma!'},
+  {letra:'V', ono:'VVVVVV', emoji:'🌀💨', dica:'V de fugir do ventilador girando!'},
+  {letra:'W', ono:'UUUUUU', emoji:'👻', dica:'W de fantasma!'},
+  {letra:'X', ono:'XXXXXX', emoji:'🤫', dica:'X de pedir silêncio!'},
+  {letra:'Y', ono:'IIIIIIII', emoji:'😵', dica:'Y de grito!'},
+  {letra:'Z', ono:'ZZZZZZ', emoji:'🐝', dica:'Z de abelha zumbindo!'}
+];
+
+var cartasSorte = [
+  {texto:'🌠 Você viu uma estrela cadente! Avance 2 casas!', avancar:2},
+  {texto:'☄️ Um cometa passou rápido! Avance 1 casa!', avancar:1},
+  {texto:'🛰️ Seu foguete precisa de manutenção. Volte 1 casa.', avancar:-1},
+  {texto:'👨‍🚀 Você ajudou um astronauta perdido. Avance 2 casas!', avancar:2},
+  {texto:'🌪️ Uma tempestade espacial te atrasou. Volte 2 casas.', avancar:-2},
+  {texto:'🚀 Turbo ativado! Avance 3 casas!', avancar:3},
+  {texto:'🪨 Um asteroide bloqueou o caminho. Fique parado nessa rodada.', avancar:0}
+];
+
+var trilha = [{tipo:'inicio', label:'Terra', emoji:'🌍'}];
+var contSorte = 0;
+alfabeto.forEach(function(item, i){
+  trilha.push({tipo:'letra', dados:item});
+  if((i+1) % 4 === 0 && contSorte < cartasSorte.length){ trilha.push({tipo:'sorte'}); contSorte++; }
+});
+trilha.push({tipo:'fim', label:'Lua', emoji:'🌙'});
+
+var TOTAL_CASAS = trilha.length - 1;
+var posicoes = [0, 0];
+var turnoAtual = 0;
+var ocupado = false;
+var nomes = ['Professora', 'Criança'];
+var icones = ['🚀', '🛸'];
+var letraAtual = null;
+
+/* ===================== TABULEIRO ===================== */
+var elTab = document.getElementById('tabuleiro');
+function renderizarTabuleiro(){
+  var html = '';
+  for(var i=0;i<trilha.length;i++){
+    var c = trilha[i];
+    var cls = 'casa' + (c.tipo !== 'letra' ? ' ' + c.tipo : '');
+    var miolo = '';
+    if(c.tipo === 'inicio' || c.tipo === 'fim'){
+      miolo = '<div class="emoji-txt" style="font-size:1.7rem">'+c.emoji+'</div><div style="font-size:.62rem">'+c.label+'</div>';
+    } else if(c.tipo === 'sorte'){
+      miolo = '<div class="emoji-txt">✨</div><div style="font-size:.58rem">SORTE</div>';
+    } else {
+      miolo = '<div class="letra-txt">'+c.dados.letra+'</div><div class="emoji-txt">'+c.dados.emoji+'</div>';
+    }
+    html += '<div class="'+cls+'" id="casa-'+i+'"><div class="num">'+i+'</div>'+miolo+
+            '<div class="pawns-container" id="pawns-'+i+'"></div></div>';
+  }
+  elTab.innerHTML = html;
+  atualizarPawns();
+}
+
+function labelCasa(i){
+  var c = trilha[i];
+  if(c.tipo === 'inicio') return 'Terra 🌍';
+  if(c.tipo === 'fim') return 'Lua 🌙';
+  if(c.tipo === 'sorte') return 'Sorte ✨ (' + i + ')';
+  return c.dados.letra + ' (' + i + ')';
+}
+
+function atualizarPawns(){
+  var conts = elTab.querySelectorAll('.pawns-container');
+  for(var i=0;i<conts.length;i++) conts[i].innerHTML = '';
+  for(var j=0;j<2;j++){
+    var alvo = document.getElementById('pawns-' + posicoes[j]);
+    if(alvo) alvo.innerHTML += '<span class="pawn">' + icones[j] + '</span>';
+  }
+  document.getElementById('pos-p1').textContent = 'Casa: ' + labelCasa(posicoes[0]);
+  document.getElementById('pos-p2').textContent = 'Casa: ' + labelCasa(posicoes[1]);
+}
+
+function atualizarHUD(){
+  document.getElementById('card-p1').classList.toggle('ativo', turnoAtual === 0);
+  document.getElementById('card-p2').classList.toggle('ativo', turnoAtual === 1);
+  document.getElementById('vez-texto').textContent = 'Vez da ' + nomes[turnoAtual] + ' ' + icones[turnoAtual];
+}
+
+/* ===================== DADO ===================== */
+/* Rotações fixas que trazem cada face para a frente */
+var faceRot = {
+  1: {x:  0, y:   0},
+  2: {x:  0, y: -90},
+  3: {x: 90, y:   0},
+  4: {x:-90, y:   0},
+  5: {x:  0, y:  90},
+  6: {x:  0, y: 180}
+};
+var voltas = 0;
+var elDado = document.getElementById('dado');
+var elResultado = document.getElementById('resultado-dado');
+var btnDado = document.getElementById('btn-dado');
+
+function jogarDado(){
+  if(ocupado) return;
+  ocupado = true;
+  btnDado.disabled = true;
+  elResultado.textContent = 'Rolando...';
+  somDado();
+
+  var resultado = Math.floor(Math.random() * 6) + 1;
+  var alvo = faceRot[resultado];
+  voltas += 2;
+
+  // Ângulo absoluto: sempre cresce, garantindo o giro visível
+  var rx = alvo.x + 360 * voltas;
+  var ry = alvo.y + 360 * voltas;
+
+  elDado.classList.add('rolando');
+  elDado.style.transform = 'rotateX(' + rx + 'deg) rotateY(' + ry + 'deg)';
+
+  setTimeout(function(){
+    elResultado.textContent = 'Saiu ' + resultado + '! Avançando ' + resultado + ' casa' + (resultado > 1 ? 's' : '') + '.';
+    moverJogador(turnoAtual, resultado);
+  }, 1250);
+}
+
+/* ===================== MOVIMENTO ===================== */
+function moverJogador(jIdx, passos){
+  var nova = posicoes[jIdx] + passos;
+  if(nova > TOTAL_CASAS) nova = TOTAL_CASAS;
+  if(nova < 0) nova = 0;
+  posicoes[jIdx] = nova;
+  somFoguete();
+  atualizarPawns();
+  destacarCasa(nova);
+  setTimeout(function(){ abrirCarta(jIdx, nova); }, 500);
+}
+
+function destacarCasa(i){
+  var antigas = elTab.querySelectorAll('.casa.destaque');
+  for(var k=0;k<antigas.length;k++) antigas[k].classList.remove('destaque');
+  var el = document.getElementById('casa-' + i);
+  if(el){
+    el.classList.add('destaque');
+    try{ el.scrollIntoView({behavior: ehMobile ? 'auto' : 'smooth', block: 'center'}); }catch(e){}
+  }
+}
+
+/* ===================== CARTAS ===================== */
+var elOverlay = document.getElementById('overlay');
+var elCarta = document.getElementById('carta');
+var elTag = document.getElementById('carta-tag');
+var elLetra = document.getElementById('carta-letra');
+var elEmoji = document.getElementById('carta-emoji');
+var elOno = document.getElementById('carta-onomatopeia');
+var elInstr = document.getElementById('carta-instrucao');
+var elSorteTxt = document.getElementById('carta-sorte-texto');
+var btnConfirmar = document.getElementById('btn-confirmar-carta');
+var btnOuvir = document.getElementById('btn-ouvir');
+var acaoConfirmar = null;
+
+function abrirCarta(jIdx, pos){
+  var casa = trilha[pos];
+  letraAtual = null;
+  btnOuvir.classList.add('oculto');
+
+  if(casa.tipo === 'fim'){ finalizarJogo(jIdx); return; }
+
+  if(casa.tipo === 'inicio'){
+    somCartaAbre();
+    elCarta.classList.remove('sorte');
+    elTag.textContent = 'DECOLAGEM 🌍';
+    elLetra.textContent = '🌍'; elLetra.classList.remove('oculto');
+    elEmoji.textContent = '🚀';
+    elOno.textContent = 'Vamos começar!'; elOno.classList.remove('oculto');
+    elInstr.textContent = nomes[jIdx] + ', prepare-se para a viagem!'; elInstr.classList.remove('oculto');
+    elSorteTxt.classList.add('oculto');
+    acaoConfirmar = function(){ fecharCarta(); setTimeout(passarVez, 150); };
+  } else if(casa.tipo === 'sorte'){
+    var sorte = cartasSorte[Math.floor(Math.random() * cartasSorte.length)];
+    somSorte();
+    elCarta.classList.add('sorte');
+    elTag.textContent = 'CARTA DE SORTE ✨';
+    elLetra.classList.add('oculto');
+    elEmoji.textContent = '✨';
+    elOno.classList.add('oculto');
+    elInstr.classList.add('oculto');
+    elSorteTxt.classList.remove('oculto');
+    elSorteTxt.textContent = sorte.texto;
+    acaoConfirmar = function(){
+      fecharCarta();
+      if(sorte.avancar !== 0){
+        ocupado = true; btnDado.disabled = true;
+        setTimeout(function(){ moverJogador(jIdx, sorte.avancar); }, 300);
+      } else {
+        setTimeout(passarVez, 200);
+      }
+    };
+  } else {
+    var d = casa.dados;
+    elCarta.classList.remove('sorte');
+    elLetra.classList.remove('oculto');
+    elOno.classList.remove('oculto');
+    elInstr.classList.remove('oculto');
+    elSorteTxt.classList.add('oculto');
+    elTag.textContent = 'CASA ' + pos;
+    elLetra.textContent = d.letra;
+    elEmoji.textContent = d.emoji;
+    elOno.textContent = d.ono;
+    elInstr.textContent = d.dica + ' Diga o nome da letra "' + d.letra + '" e faça o som dela para continuar!';
+    letraAtual = d.letra;
+    btnOuvir.classList.remove('oculto');
+    acaoConfirmar = function(){ fecharCarta(); setTimeout(passarVez, 150); };
+    falarLetra(d.letra, function(){
+      if(efeitosLetras[d.letra]) efeitosLetras[d.letra]();
+    });
+  }
+
+  elOverlay.classList.add('show');
+}
+
+function fecharCarta(){
+  if('speechSynthesis' in window){ try{ window.speechSynthesis.cancel(); }catch(e){} }
+  elOverlay.classList.remove('show');
+  ocupado = false;
+  btnDado.disabled = false;
+}
+
+function passarVez(){
+  turnoAtual = 1 - turnoAtual;
+  atualizarHUD();
+  elResultado.textContent = '';
+}
+
+/* ===================== VITÓRIA ===================== */
+function finalizarJogo(jIdx){
+  somVitoria();
+  document.getElementById('jogo').classList.add('oculto');
+  document.getElementById('tela-vitoria').classList.add('show');
+  document.getElementById('texto-vitoria').textContent = nomes[jIdx] + ' chegou primeiro à Lua! 🌙🎉';
+  lancarConfete();
+  ocupado = false;
+}
+
+function lancarConfete(){
+  var container = document.getElementById('confete');
+  var cores = ['#ff8c42','#4de3f0','#ffd93d','#4ade80','#ff6b9d'];
+  var qtd = ehMobile ? 30 : 60;
+  for(var i=0;i<qtd;i++){
+    (function(){
+      var c = document.createElement('div');
+      var tam = (5 + Math.random()*6).toFixed(0) + 'px';
+      c.style.cssText = 'position:absolute;width:'+tam+';height:'+tam+
+        ';background:'+cores[Math.floor(Math.random()*cores.length)]+
+        ';left:'+(Math.random()*100).toFixed(1)+'%;top:-10px;border-radius:'+
+        (Math.random() > .5 ? '50%' : '2px')+';';
+      var dur = 3 + Math.random()*3;
+      c.style.transition = 'transform '+dur+'s linear, opacity '+dur+'s linear';
+      container.appendChild(c);
+      requestAnimationFrame(function(){
+        c.style.transform = 'translateY(' + (window.innerHeight + 60) + 'px) rotate(' + Math.floor(Math.random()*720) + 'deg)';
+        c.style.opacity = '0';
+      });
+      setTimeout(function(){ if(c.parentNode) c.parentNode.removeChild(c); }, dur*1000 + 300);
+    })();
+  }
+}
+
+/* ===================== CONTROLES ===================== */
+function iniciarJogo(){
+  document.getElementById('tela-inicial').classList.add('oculto');
+  document.getElementById('jogo').classList.remove('oculto');
+  renderizarTabuleiro();
+  atualizarHUD();
+  getCtx();
+  if('speechSynthesis' in window) carregarVozes();
+  ocupado = false;
+  btnDado.disabled = false;
+}
+
+function reiniciarJogo(){
+  posicoes = [0, 0];
+  turnoAtual = 0;
+  ocupado = false;
+  voltas = 0;
+  elDado.classList.remove('rolando');
+  elDado.style.transform = 'rotateX(0deg) rotateY(0deg)';
+  elResultado.textContent = '';
+  document.getElementById('tela-vitoria').classList.remove('show');
+  document.getElementById('jogo').classList.remove('oculto');
+  renderizarTabuleiro();
+  atualizarHUD();
+  btnDado.disabled = false;
+}
+
+/* ===================== TELA CHEIA ===================== */
+var btnTelaCheia = document.getElementById('btn-tela-cheia');
+var iconeTC = document.getElementById('icone-tela-cheia');
+var rotuloTC = document.getElementById('rotulo-tela-cheia');
+
+function estaEmTelaCheia(){
+  return !!(document.fullscreenElement || document.webkitFullscreenElement ||
+            document.mozFullScreenElement || document.msFullscreenElement);
+}
+
+function entrarTelaCheia(){
+  var el = document.documentElement;
+  var fn = el.requestFullscreen || el.webkitRequestFullscreen ||
+           el.mozRequestFullScreen || el.msRequestFullscreen;
+  if(fn){
+    try{
+      var r = fn.call(el);
+      if(r && r.catch) r.catch(function(){});
+    }catch(e){}
+  } else {
+    // iPhone/iPad no Safari não permitem tela cheia por código
+    alert('Para tela cheia neste aparelho: toque em Compartilhar e escolha "Adicionar à Tela de Início". O jogo abrirá sem a barra do navegador. 🚀');
+  }
+}
+
+function sairTelaCheia(){
+  var fn = document.exitFullscreen || document.webkitExitFullscreen ||
+           document.mozCancelFullScreen || document.msExitFullscreen;
+  if(fn){
+    try{
+      var r = fn.call(document);
+      if(r && r.catch) r.catch(function(){});
+    }catch(e){}
+  }
+}
+
+function atualizarBotaoTC(){
+  if(estaEmTelaCheia()){
+    iconeTC.textContent = '✕';
+    rotuloTC.textContent = 'Sair';
+    btnTelaCheia.title = 'Sair da tela cheia';
+  } else {
+    iconeTC.textContent = '⛶';
+    rotuloTC.textContent = 'Tela cheia';
+    btnTelaCheia.title = 'Tela cheia';
+  }
+}
+
+btnTelaCheia.addEventListener('click', function(){
+  if(estaEmTelaCheia()) sairTelaCheia(); else entrarTelaCheia();
+  setTimeout(atualizarBotaoTC, 150);
+});
+
+['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange'].forEach(function(ev){
+  document.addEventListener(ev, atualizarBotaoTC);
+});
+atualizarBotaoTC();
+
+/* ===================== FLASHCARDS ===================== */
+var elOverlayFlash = document.getElementById('overlay-flash');
+var elGradeFlash = document.getElementById('grade-flash');
+var flashMontado = false;
+
+function montarFlashcards(){
+  if(flashMontado) return;
+  var html = '';
+  for(var i=0;i<alfabeto.length;i++){
+    var a = alfabeto[i];
+    html += '<div class="flashcard" data-letra="'+a.letra+'">' +
+              '<div class="fc-letra">'+a.letra+'</div>' +
+              '<div class="fc-emoji">'+a.emoji+'</div>' +
+              '<div class="fc-ono">'+a.ono+'</div>' +
+              '<div class="fc-dica">'+a.dica+'</div>' +
+            '</div>';
+  }
+  elGradeFlash.innerHTML = html;
+  flashMontado = true;
+
+  elGradeFlash.addEventListener('click', function(ev){
+    var card = ev.target.closest ? ev.target.closest('.flashcard') : null;
+    if(!card) return;
+    var letra = card.getAttribute('data-letra');
+    if(!letra) return;
+
+    var ativos = elGradeFlash.querySelectorAll('.flashcard.tocando');
+    for(var k=0;k<ativos.length;k++) ativos[k].classList.remove('tocando');
+    card.classList.add('tocando');
+    setTimeout(function(){ card.classList.remove('tocando'); }, 1800);
+
+    falarLetra(letra, function(){
+      if(efeitosLetras[letra]) efeitosLetras[letra]();
+    });
+  });
+}
+
+function abrirFlashcards(){
+  getCtx();
+  if('speechSynthesis' in window) carregarVozes();
+  montarFlashcards();
+  elOverlayFlash.classList.add('show');
+  elOverlayFlash.scrollTop = 0;
+}
+
+function fecharFlashcards(){
+  if('speechSynthesis' in window){ try{ window.speechSynthesis.cancel(); }catch(e){} }
+  elOverlayFlash.classList.remove('show');
+}
+
+document.getElementById('btn-flashcards').addEventListener('click', abrirFlashcards);
+document.getElementById('btn-flashcards-jogo').addEventListener('click', abrirFlashcards);
+document.getElementById('btn-fechar-flash').addEventListener('click', fecharFlashcards);
+
+document.getElementById('btn-iniciar').addEventListener('click', iniciarJogo);
+document.getElementById('btn-reiniciar').addEventListener('click', reiniciarJogo);
+btnDado.addEventListener('click', jogarDado);
+btnConfirmar.addEventListener('click', function(){ if(acaoConfirmar) acaoConfirmar(); });
+btnOuvir.addEventListener('click', function(){
+  if(!letraAtual) return;
+  falarLetra(letraAtual, function(){
+    if(efeitosLetras[letraAtual]) efeitosLetras[letraAtual]();
+  });
+});
+
+})();
+</script>
+</body>
+</html>
